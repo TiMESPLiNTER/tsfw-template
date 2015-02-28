@@ -1,0 +1,7 @@
+<phpunit bootstrap="bootstrap.php" colors="true">
+    <testsuites>
+        <testsuite name="tsfw-template">
+            <directory>tsfw-template</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

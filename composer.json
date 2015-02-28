@@ -2,7 +2,7 @@
     "name": "timesplinter/tsfw-template",
     "type": "library",
     "description": "PHP library to render templates with custom tags",
-    "keywords": ["tsfw", "common"],
+	"keywords": ["tsfw", "template engine", "template", "custom tags"],
     "homepage": "http://github.com/TiMESPLiNTER/tsfw-template",
     "license": "LGPL",
     "require": {

@@ -58,19 +58,19 @@ class TemplateEngine
 	protected static function getDefaultCustomTags()
 	{
 		return array(
-			'text' => 'ch\timesplinter\customtags\TextTag',
-			'checkboxOptions' => 'ch\timesplinter\customtags\CheckboxOptionsTag',
-			'checkbox' => 'ch\timesplinter\customtags\CheckboxTag',
-			'date' => 'ch\timesplinter\customtags\DateTag',
-			'else' => 'ch\timesplinter\customtags\ElseTag',
-			'for' => 'ch\timesplinter\customtags\ForTag',
-			'if' => 'ch\timesplinter\customtags\IfTag',
-			'elseif' => 'ch\timesplinter\customtags\ElseifTag',
-			'loadSubTpl' => 'ch\timesplinter\customtags\LoadSubTplTag',
-			'options' => 'ch\timesplinter\customtags\OptionsTag',
-			'option' => 'ch\timesplinter\customtags\OptionTag',
-			'radioOptions' => 'ch\timesplinter\customtags\RadioOptionsTag',
-			'radio' => 'ch\timesplinter\customtags\RadioTag',
+			'text' => 'timesplinter\tsfw\customtags\TextTag',
+			'checkboxOptions' => 'timesplinter\tsfw\customtags\CheckboxOptionsTag',
+			'checkbox' => 'timesplinter\tsfw\customtags\CheckboxTag',
+			'date' => 'timesplinter\tsfw\customtags\DateTag',
+			'else' => 'timesplinter\tsfw\customtags\ElseTag',
+			'for' => 'timesplinter\tsfw\customtags\ForTag',
+			'if' => 'timesplinter\tsfw\customtags\IfTag',
+			'elseif' => 'timesplinter\tsfw\customtags\ElseifTag',
+			'loadSubTpl' => 'timesplinter\tsfw\customtags\LoadSubTplTag',
+			'options' => 'timesplinter\tsfw\customtags\OptionsTag',
+			'option' => 'timesplinter\tsfw\customtags\OptionTag',
+			'radioOptions' => 'timesplinter\tsfw\customtags\RadioOptionsTag',
+			'radio' => 'timesplinter\tsfw\customtags\RadioTag',
 		);
 	}
 

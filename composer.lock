@@ -3,27 +3,27 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "cbe08d5a6afaa7a7b5b3229efcb75207",
+    "hash": "dcdf711b798c3126572785999f93746b",
     "packages": [
         {
             "name": "timesplinter/tsfw-common",
-            "version": "v0.1.0",
+            "version": "v0.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/TiMESPLiNTER/tsfw-common.git",
-                "reference": "299bf51708b10f5356723976e1c4788c8ca44910"
+                "reference": "f6a49d1a6cec1001cb5c2bd19b1eb0719b181bff"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/TiMESPLiNTER/tsfw-common/zipball/299bf51708b10f5356723976e1c4788c8ca44910",
-                "reference": "299bf51708b10f5356723976e1c4788c8ca44910",
+                "url": "https://api.github.com/repos/TiMESPLiNTER/tsfw-common/zipball/f6a49d1a6cec1001cb5c2bd19b1eb0719b181bff",
+                "reference": "f6a49d1a6cec1001cb5c2bd19b1eb0719b181bff",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.1.0"
             },
             "require-dev": {
-                "phpunit/phpunit": "3.7.*"
+                "phpunit/phpunit": "4.2.*"
             },
             "type": "library",
             "autoload": {
@@ -49,7 +49,7 @@
                 "common",
                 "tsfw"
             ],
-            "time": "2014-07-23 08:29:50"
+            "time": "2015-03-01 00:20:33"
         }
     ],
     "packages-dev": [

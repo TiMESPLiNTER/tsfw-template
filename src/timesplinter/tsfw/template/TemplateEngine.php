@@ -302,7 +302,7 @@ class TemplateEngine
 		$this->htmlDoc = new HtmlDoc($content, $this->tplNsPrefix);
 
 		foreach($this->customTags as $customTag) {
-			if(in_array('ch\timesplinter\template\TagNode', class_implements($customTag)) === false || $customTag::isSelfClosing() === false)
+			if(in_array('timesplinter\tsfw\template\TagNode', class_implements($customTag)) === false || $customTag::isSelfClosing() === false)
 				continue;
 			
 			/** @var TagNode $customTag */

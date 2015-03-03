@@ -2,9 +2,6 @@
 
 namespace timesplinter\test;
 
-use timesplinter\tsfw\template\NullTemplateCache;
-use timesplinter\tsfw\template\TemplateCacheStrategy;
-use timesplinter\tsfw\template\TemplateEngine;
 use timesplinter\tsfw\template\test\AbstractTemplateTest;
 
 /**
@@ -13,25 +10,25 @@ use timesplinter\tsfw\template\test\AbstractTemplateTest;
  */
 class TemplateEngineTest extends AbstractTemplateTest
 {
-	/** @var TemplateEngine */
-	protected $tplEngine;
+	protected $basePath;
 	
-	protected function setUp()
+	public function setUp()
 	{
-		/** @var TemplateCacheStrategy $cacheStrategyMock */
-		$this->tplEngine = new TemplateEngine(
-			new NullTemplateCache(), 'tst'
-		);
+		parent::setUp();
+		
+		$this->basePath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR;
 	}
 	
 	public function testParseBasicTemplate()
 	{
-		$this->assertStringEqualsFile('templates/plain.html', $this->tplEngine->getResultAsHtml('templates/plain.html'));
+		
+		
+		$this->assertStringEqualsFile($this->basePath . 'templates/plain.html', $this->tplEngine->getResultAsHtml($this->basePath . 'templates/plain.html'));
 	}
 	
 	public function testParseCustomTagTemplate()
 	{
-		$this->assertStringEqualsFile('templates-result/custom-tags.html', $this->tplEngine->getResultAsHtml('templates/custom-tags.html', array(
+		$this->assertStringEqualsFile($this->basePath . 'templates-result/custom-tags.html', $this->tplEngine->getResultAsHtml($this->basePath . 'templates/custom-tags.html', array(
 			'title' => 'Foo',
 			'content' => 'Bar baz'
 		)));

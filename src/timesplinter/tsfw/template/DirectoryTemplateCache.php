@@ -85,7 +85,8 @@ class DirectoryTemplateCache extends TemplateCacheStrategy
 	{
 		$templateCacheEntry = new TemplateCacheEntry();
 
-		$templateCacheEntry->path = $path;
+		$templateCacheEntry->templatePath = $path;
+		$templateCacheEntry->cachePath = $path;
 		$templateCacheEntry->changeTime = $changeTime;
 		$templateCacheEntry->size = $size;
 

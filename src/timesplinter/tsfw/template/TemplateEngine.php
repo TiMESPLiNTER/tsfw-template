@@ -50,7 +50,7 @@ class TemplateEngine
 		$this->customTags = array_merge(self::getDefaultCustomTags(), $customTags);
 
 		$this->dataPool = new \ArrayObject();
-		$this->dataTable = new \ArrayObject();
+		$this->dataTable = array();
 
 		$this->getterMethodPrefixes = array('get', 'is', 'has');
 	}
@@ -85,7 +85,7 @@ class TemplateEngine
 			throw new TemplateEngineException('Invalid template-file: ' . $this->currentTemplateFile);
 
 		try {
-			$this->copyNodes($nodeList);
+			$this->interpolate($nodeList);
 		} catch(\DOMException $e) {
 			throw new TemplateEngineException('Error while processing the template file ' . $this->currentTemplateFile . ': ' . $e->getMessage());
 		}
@@ -97,7 +97,7 @@ class TemplateEngine
 	 * @throws \Exception
 	 * @throws TemplateEngineException
 	 */
-	protected function copyNodes(array $nodeList)
+	protected function interpolate(array $nodeList)
 	{
 		foreach($nodeList as $node) {
 			// Parse inline tags if activated
@@ -117,7 +117,7 @@ class TemplateEngine
 			}
 			
 			if(count($node->childNodes) > 0)
-				$this->copyNodes($node->childNodes);
+				$this->interpolate($node->childNodes);
 
 			if($node->namespace !== $this->tplNsPrefix)
 				continue;
@@ -212,71 +212,74 @@ class TemplateEngine
 	}
 
 	/**
-	 * This method parses the given template file
+	 * Parses the template and caches it
 	 *
 	 * @param string $tplFile The path to the template file to parse
+	 * @param TemplateCacheEntry|null $currentCacheEntry
 	 *
-	 * @return string The parsed template
-	 */
-	public function parse($tplFile)
-	{
-		if(($this->cached = $this->isTplFileCached($tplFile)) !== null)
-			return $this->cached;
-		
-		// PARSE IT NEW: No NodeList given? Okay! I'll load defaults for you
-		return $this->cache($tplFile);
-	}
-
-	/**
-	 * Returns if file is cached or not
-	 *
-	 * @param string $filePath Path to the templace file that should be checked
-	 *
-	 * @return boolean Is file cached or not
-	 *
+	 * @return TemplateCacheEntry The corresponding template cache entry
 	 * @throws TemplateEngineException
 	 */
-	private function isTplFileCached($filePath)
+	protected function cache($tplFile, $currentCacheEntry)
 	{
-		if(stream_resolve_include_path($filePath) === false)
-			throw new TemplateEngineException('Could not find template file: ' . $filePath);
-
-		/** @var TemplateCacheEntry */
-		$tplCacheEntry = $this->templateCacheInterface->getCachedTplFile($filePath);
+		$this->templateCacheInterface->setSaveOnDestruct(false);
 		
-		if($tplCacheEntry === null)
-			return null;
-
-		if(($changeTime = @filemtime($filePath)) === false)
-			$changeTime = @filectime($filePath);
-		
-		if(($tplCacheEntry->size >= 0 && $tplCacheEntry->size !== @filesize($filePath)) || $tplCacheEntry->changeTime < $changeTime) {
-			return null;
-		}
-
-		return $tplCacheEntry;
+		return $this->templateCacheInterface->addCachedTplFile(
+			$tplFile, 
+			$currentCacheEntry, 
+			$this->parseFile($tplFile)
+		);
 	}
 
 	/**
-	 * Returns the final HTML-code or includes the cached file (if caching is
-	 * enabled)
+	 * Returns a cache entry for the given template file if there is a valid one
+	 *
+	 * @param string $tplPath
+	 * @param TemplateCacheEntry $tplCacheEntry Path to the template file that should be checked
+	 *
+	 * @return bool Is file cached or not
+	 */
+	protected function isCacheEntryValid($tplPath, TemplateCacheEntry $tplCacheEntry)
+	{
+		if(($changeTime = @filemtime($tplPath)) === false)
+			$changeTime = @filectime($tplPath);
+		
+		if(($tplCacheEntry->size >= 0 && $tplCacheEntry->size !== @filesize($tplPath)) || $tplCacheEntry->changeTime < $changeTime)
+			return false;
+
+		return true;
+	}
+
+	/**
+	 * Returns the final HTML-code or includes the cached file (if caching is enabled)
+	 * 
 	 * @param string $tplFile
 	 * @param array $tplVars
-	 * @throws \Exception
+	 *
 	 * @return string
+	 * @throws \Exception
 	 */
 	public function getResultAsHtml($tplFile, $tplVars = array())
 	{
-		$this->currentTemplateFile = $tplFile;
-		$this->dataPool = new \ArrayObject($tplVars);
+		if(stream_resolve_include_path($tplFile) === false)
+			throw new TemplateEngineException('Could not find template file: ' . $tplFile);
 		
-		$templateCacheEntry = $this->parse($tplFile);
-
 		try {
+			$this->currentTemplateFile = $tplFile;
+			$this->dataPool = new \ArrayObject($tplVars);
+
+			$templateCacheEntry = $this->templateCacheInterface->getCachedTplFile($tplFile);
+			
+			if($templateCacheEntry === null || $this->isCacheEntryValid($tplFile, $templateCacheEntry) === false) {
+				$templateCacheEntry = $this->cache($tplFile, $templateCacheEntry);
+			}
+			
+			$tplFileToRequire = $this->templateCacheInterface->getCachePath() . $templateCacheEntry->path;
+			
 			ob_start();
 			
-			require $this->templateCacheInterface->getCachePath() . $templateCacheEntry->path;
-			
+			require $tplFileToRequire;
+
 			return ob_get_clean();
 		} catch(\Exception $e) {
 			// Throw away the whole template code till now
@@ -287,34 +290,40 @@ class TemplateEngine
 		}
 	}
 
-	protected function cache($tplFile)
+	/**
+	 * This method parses the given template file
+	 * 
+	 * @param string $tplFile
+	 *
+	 * @return string
+	 * @throws TemplateEngineException
+	 */
+	protected function parseFile($tplFile)
 	{
 		$cacheFileName = null;
 		
 		if(stream_resolve_include_path($tplFile) === false)
 			throw new TemplateEngineException('Template file \'' . $tplFile . '\' does not exists');
 		
-		/** @var TemplateCacheEntry */
-		$currentCacheEntry = $this->templateCacheInterface->getCachedTplFile($tplFile);
-		
 		// Render tpl
-		$content = file_get_contents($tplFile);
+		return $this->parse(file_get_contents($tplFile));
+	}
+	
+	protected function parse($content)
+	{
 		$this->htmlDoc = new HtmlDoc($content, $this->tplNsPrefix);
 
 		foreach($this->customTags as $customTag) {
-			if(in_array('timesplinter\tsfw\template\TagNode', class_implements($customTag)) === false || $customTag::isSelfClosing() === false)
+			if(in_array(TagNode::class, class_implements($customTag)) === false || $customTag::isSelfClosing() === false)
 				continue;
-			
+
 			/** @var TagNode $customTag */
 			$this->htmlDoc->addSelfClosingTag($this->tplNsPrefix . ':' . $customTag::getName());
 		}
-		
+
 		$this->load();
 
-		$compiledTemplateContent = $this->htmlDoc->getHtml();
-		$this->templateCacheInterface->setSaveOnDestruct(false);
-
-		return $this->templateCacheInterface->addCachedTplFile($tplFile, $currentCacheEntry, $compiledTemplateContent);
+		return $this->htmlDoc->getHtml();
 	}
 
 	/**
@@ -478,11 +487,11 @@ class TemplateEngine
 			$nextSel = $currentSel . '.' . $part;
 
 			// Try to find value in hashmap, thats faster then parse again
-			/*if($this->dataTable->offsetExists($nextSel)) {
-				$varData = $this->dataTable->offsetGet($nextSel);
+			if(array_key_exists($nextSel, $this->dataTable) === true) {
+				$varData = $this->dataTable[$nextSel];
 
 				continue;
-			}*/
+			}
 
 			if($varData instanceof \ArrayObject === true) {
 				/** @var \ArrayObject $varData */
@@ -543,7 +552,7 @@ class TemplateEngine
 			}
 
 			$currentSel = $nextSel;
-			$this->dataTable->offsetSet($currentSel, $varData);
+			$this->dataTable[$currentSel] = &$varData;
 		}
 
 		return $varData;

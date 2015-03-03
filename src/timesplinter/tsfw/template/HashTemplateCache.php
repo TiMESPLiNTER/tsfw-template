@@ -67,12 +67,10 @@ class HashTemplateCache extends TemplateCacheStrategy
 			$this->logger->error('Could not write template cache-file: ' . $cacheFilePath);
 		}
 	}
-	
-	
 
 	/**
-	 * 
 	 * @param string $tplFile
+	 * 
 	 * @return TemplateCacheEntry
 	 */
 	public function getCachedTplFile($tplFile)
@@ -88,19 +86,21 @@ class HashTemplateCache extends TemplateCacheStrategy
 	 * @param TemplateCacheEntry|null $currentCacheEntry
 	 * @param string $compiledTemplateContent
 	 *
-	 * @throws TemplateEngineException
 	 * @return TemplateCacheEntry
+	 * @throws TemplateEngineException
 	 */
 	public function addCachedTplFile($tplFile, $currentCacheEntry, $compiledTemplateContent)
 	{
 		// NEW HERE
-		$cacheFileName = ($currentCacheEntry !== null)?$currentCacheEntry->path:uniqid() . self::CACHE_SUFFIX;
+		$cacheFileName = ($currentCacheEntry !== null) ? $currentCacheEntry->cachePath : uniqid() . self::CACHE_SUFFIX;
 		$cacheFilePath = $this->cachePath . $cacheFileName;
 		
 		if(stream_resolve_include_path($cacheFilePath) === true && is_writable($cacheFilePath) === false)
 			throw new TemplateEngineException('Cache file is not writable: ' . $cacheFilePath);
 
-		$fp = @fopen($cacheFilePath, 'w');
+		$errorReportingLevel = error_reporting(0);
+		$fp = fopen($cacheFilePath, 'w');
+		error_reporting($errorReportingLevel);
 
 		if($fp !== false) {
 			fwrite($fp, $compiledTemplateContent);
@@ -111,14 +111,18 @@ class HashTemplateCache extends TemplateCacheStrategy
 			throw new TemplateEngineException('Could not cache template-file: ' . $cacheFilePath);
 		}
 
-		$fileSize = @filesize($tplFile);
+		$errorReportingLevel = error_reporting(0);
+		$fileSize = filesize($tplFile);
 
-		if(($changeTime = @filemtime($tplFile)) === false)
-			$changeTime = @filectime($tplFile);
+		if(($changeTime = filemtime($tplFile)) === false)
+			$changeTime = filectime($tplFile);
+		
+		error_reporting($errorReportingLevel);
 		
 		$tplCacheEntry = new TemplateCacheEntry();
 		
-		$tplCacheEntry->path = $cacheFileName;
+		$tplCacheEntry->templatePath = $tplFile;
+		$tplCacheEntry->cachePath = $cacheFileName;
 		$tplCacheEntry->size = $fileSize;
 		$tplCacheEntry->changeTime = $changeTime;
 				

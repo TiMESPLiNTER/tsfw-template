@@ -47,7 +47,7 @@ class TemplateEngine
 	{
 		$this->templateCacheInterface = $tplCacheInterface;
 		$this->tplNsPrefix = $tplNsPrefix;
-		$this->customTags = array_merge(self::getDefaultCustomTags(), $customTags);
+		$this->customTags = self::getDefaultCustomTags() + $customTags;
 
 		$this->dataPool = new \ArrayObject();
 		$this->dataTable = new \ArrayObject();
@@ -59,6 +59,7 @@ class TemplateEngine
 	{
 		return array(
 			'text' => 'timesplinter\tsfw\customtags\TextTag',
+			'print' => 'timesplinter\tsfw\customtagsPrintTag',
 			'checkboxOptions' => 'timesplinter\tsfw\customtags\CheckboxOptionsTag',
 			'checkbox' => 'timesplinter\tsfw\customtags\CheckboxTag',
 			'date' => 'timesplinter\tsfw\customtags\DateTag',
@@ -70,7 +71,7 @@ class TemplateEngine
 			'options' => 'timesplinter\tsfw\customtags\OptionsTag',
 			'option' => 'timesplinter\tsfw\customtags\OptionTag',
 			'radioOptions' => 'timesplinter\tsfw\customtags\RadioOptionsTag',
-			'radio' => 'timesplinter\tsfw\customtags\RadioTag',
+			'radio' => 'timesplinter\tsfw\customtags\RadioTag'
 		);
 	}
 
@@ -449,6 +450,17 @@ class TemplateEngine
 		}
 
 		return true;
+	}
+
+	/**
+	 * Register a new tag for the this TemplateEngine instance
+	 *
+	 * @param string $tagName The name of the tag
+	 * @param string $tagClass The class name of the tag
+	 */
+	public function registerTag($tagName, $tagClass)
+	{
+		$this->customTags[$tagName] = $tagClass;
 	}
 
 	/**

@@ -59,7 +59,7 @@ class TemplateEngine
 	{
 		return array(
 			'text' => 'timesplinter\tsfw\customtags\TextTag',
-			'print' => 'timesplinter\tsfw\customtagsPrintTag',
+			'print' => 'timesplinter\tsfw\customtags\PrintTag',
 			'checkboxOptions' => 'timesplinter\tsfw\customtags\CheckboxOptionsTag',
 			'checkbox' => 'timesplinter\tsfw\customtags\CheckboxTag',
 			'date' => 'timesplinter\tsfw\customtags\DateTag',

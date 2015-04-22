@@ -9,11 +9,8 @@ use timesplinter\tsfw\template\TemplateEngine;
 use timesplinter\tsfw\template\TemplateTag;
 
 /**
- *
- *
  * @author Pascal Muenst <entwicklung@metanet.ch>
  * @copyright Copyright (c) 2012, METANET AG, www.metanet.ch
- * @version 1.0.0
  */
 class OptionsTag extends TemplateTag implements TagNode
 {
@@ -22,28 +19,43 @@ class OptionsTag extends TemplateTag implements TagNode
 		$tplEngine->checkRequiredAttrs($node, array('options'));
 
 		// DATA
-		$compareValue = ($node->getAttribute('selected')->value !== null)?$node->getAttribute('selected')->value:null;
+		$selectionSelector = ($node->getAttribute('selected') !== null) ? "'{$node->getAttribute('selected')->value}'" : null;
+		$optionsSelector = "'{$node->getAttribute('options')->value}'";
 
-		$dataKey = $node->getAttribute('options')->value;
-
-		$compareStr = '$selected = null;';
-
-		if($compareValue !== null) {
-			//$selVal = $tplEngine->getSelectorValue($node->getAttribute('selected')->value);
-			$compareStr = '$compVal = $this->getDataFromSelector(\'' . $compareValue . '\');';
-			$compareStr .= '$selected = ((is_array($compVal) && in_array($key, $compVal)) || (is_string($compVal) && $key == $compVal))?\' selected\':null;';
-		}
-
-		$textContent = '<?php foreach($this->getDataFromSelector(\'' . $dataKey . '\') as $key => $val) {
-			' . $compareStr . '
-			echo \'<option value="\'.$key.\'"\'.$selected.\'>\'.$val.\'</option>\' . "\n";
-		} ?>';
+		$textContent = '<?php echo ' . __CLASS__ . '::render($this, ' . $optionsSelector . ', ' . $selectionSelector . '); ?>';
 
 		$newNode = new TextNode($tplEngine->getDomReader());
 		$newNode->content = $textContent;
 
 		$node->parentNode->insertBefore($newNode, $node);
 		$node->parentNode->removeNode($node);
+	}
+
+	public static function render(TemplateEngine $tplEngine, $optionsSelector, $selectedSelector)
+	{
+		$options = $tplEngine->getDataFromSelector($optionsSelector);
+		$selection = array();
+
+		if($selectedSelector !== null)
+			$selection = (array)$tplEngine->getDataFromSelector($selectedSelector);
+
+		return self::renderOptions($options, $selection);
+	}
+
+	public static function renderOptions(array $options, array $selection)
+	{
+		$html = '';
+
+		foreach($options as $key => $value) {
+			if(is_array($value) === true) {
+				$html .= '<optgroup label="' . $key . '">' . PHP_EOL . self::renderOptions($value, $selection) . '</optgroup>' . PHP_EOL;
+			} else {
+				$selected = in_array($key, $selection) ? ' selected' : null;
+				$html .= '<option value="' . $key . '"' . $selected . '>' . $value . '</option>' . PHP_EOL;
+			}
+		}
+
+		return $html;
 	}
 
 	/**

@@ -2,8 +2,6 @@
 
 namespace timesplinter\tsfw\template;
 
-use Exception;
-
 /**
  * @author Pascal Muenst <dev@timesplinter.ch>
  * @copyright Copyright (c) 2015 by TiMESPLiNTER Webdevelopment
@@ -13,7 +11,7 @@ class TemplateParseException extends TemplateEngineException
 	protected $tplFile;
 	protected $tplLine;
 
-	public function __construct($message = '', $code = 0, $tplFile, $tplLine, Exception $previous = null)
+	public function __construct($message, $tplFile, $tplLine, $code = 0, \Exception $previous = null)
 	{
 		parent::__construct($message, $code, $previous);
 
@@ -37,3 +35,5 @@ class TemplateParseException extends TemplateEngineException
 		return $this->line;
 	}
 }
+
+/* EOF */

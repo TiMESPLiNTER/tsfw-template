@@ -6,20 +6,19 @@ namespace timesplinter\tsfw\template;
  * @author Pascal Muenst <dev@timesplinter.ch>
  * @copyright Copyright (c) 2012, TiMESPLiNTER
  */
-class HashTemplateCache extends TemplateCacheStrategy
+class HashTemplateCache implements TemplateCacheStrategy
 {
 	const CACHE_SUFFIX = '.cache';
 	
-	private $filePath;
-	private $registry;
-	private $cacheChanged;
+	protected $cachePath;
+	protected $hashFilePath;
+	protected $registry;
+	protected $cacheChanged;
 
-	public function __construct($cachePath, $filePath)
+	public function __construct($cachePath, $hashFilePath)
 	{
-		parent::__construct($cachePath);
-		
 		$this->registry = array();
-		$this->filePath = $filePath;
+		$this->hashFilePath = $hashFilePath;
 		
 		$this->registry = $this->loadCacheFile();
 
@@ -29,7 +28,7 @@ class HashTemplateCache extends TemplateCacheStrategy
 	private function loadCacheFile()
 	{
 		$cache = array();
-		$cacheFilePath = $this->cachePath . $this->filePath;
+		$cacheFilePath = $this->cachePath . $this->hashFilePath;
 
 		if(file_exists($cacheFilePath) === false) {
 			return $cache;
@@ -54,17 +53,13 @@ class HashTemplateCache extends TemplateCacheStrategy
 
 	protected function saveCacheFile()
 	{
-		if($this->cacheChanged === false) {
+		if($this->cacheChanged === false)
 			return;
-		}
 
-		$cacheFilePath = $this->cachePath . $this->filePath;
+		$cacheFilePath = $this->cachePath . $this->hashFilePath;
 
-		$fp = file_put_contents($cacheFilePath, json_encode($this->registry));
-
-		if($fp === false) {
+		if(file_put_contents($cacheFilePath, json_encode($this->registry)) === false)
 			throw new TemplateEngineException('Could not write template cache-file: ' . $cacheFilePath);
-		}
 	}
 
 	/**
@@ -82,33 +77,22 @@ class HashTemplateCache extends TemplateCacheStrategy
 
 	/**
 	 * @param string $tplFile
-	 * @param TemplateCacheEntry|null $currentCacheEntry
 	 * @param string $compiledTemplateContent
 	 *
 	 * @return TemplateCacheEntry
 	 * @throws TemplateEngineException
 	 */
-	public function addCachedTplFile($tplFile, $currentCacheEntry, $compiledTemplateContent)
+	public function addCachedTplFile($tplFile, $compiledTemplateContent)
 	{
 		// NEW HERE
-		$cacheFileName = ($currentCacheEntry !== null) ? $currentCacheEntry->cachePath : uniqid() . self::CACHE_SUFFIX;
+		$cacheFileName = uniqid() . self::CACHE_SUFFIX;
 		$cacheFilePath = $this->cachePath . $cacheFileName;
 		
 		if(stream_resolve_include_path($cacheFilePath) === true && is_writable($cacheFilePath) === false)
 			throw new TemplateEngineException('Cache file is not writable: ' . $cacheFilePath);
 
-		$errorReportingLevel = error_reporting(0);
-		$fp = fopen($cacheFilePath, 'w');
-		error_reporting($errorReportingLevel);
-
-		if($fp !== false) {
-			fwrite($fp, $compiledTemplateContent);
-			fclose($fp);
-
-			$this->saveOnDestruct = true;
-		} else {
+		if(file_put_contents($cacheFilePath, $compiledTemplateContent) === false)
 			throw new TemplateEngineException('Could not cache template-file: ' . $cacheFilePath);
-		}
 
 		$errorReportingLevel = error_reporting(0);
 		$fileSize = filesize($tplFile);
@@ -125,18 +109,65 @@ class HashTemplateCache extends TemplateCacheStrategy
 		$tplCacheEntry->size = $fileSize;
 		$tplCacheEntry->changeTime = $changeTime;
 				
-		$this->registry[$tplFile] = $tplCacheEntry; //new TemplateCacheEntry($tplFile, $id, $size, $changeTime);
+		$this->registry[$tplFile] = $tplCacheEntry;
 		$this->cacheChanged = true;
 
 		return $tplCacheEntry;
 	}
 
+	/**
+	 * Returns a cache entry for the given template file if there is a valid one
+	 *
+	 * @param TemplateCacheEntry $cacheEntry Path to the template file that should be checked
+	 *
+	 * @return bool Is file cached or not
+	 */
+	public function isCacheEntryValid(TemplateCacheEntry $cacheEntry)
+	{
+		if(($changeTime = @filemtime($cacheEntry->templatePath)) === false)
+			$changeTime = @filectime($cacheEntry->templatePath);
+
+		if($cacheEntry->size !== @filesize($cacheEntry->templatePath) || $cacheEntry->changeTime < $changeTime)
+			return false;
+
+		return true;
+	}
+	
 	public function __destruct()
 	{
-		if($this->saveOnDestruct === false)
-			return;
-
 		$this->saveCacheFile($this->registry);
+	}
+
+	/**
+	 * @param TemplateCacheEntry $cacheEntry
+	 * @param string $compiledTemplateContent
+	 *
+	 * @return TemplateCacheEntry
+	 * @throws TemplateEngineException
+	 */
+	public function updateCachedTplFile(TemplateCacheEntry $cacheEntry, $compiledTemplateContent)
+	{
+		// NEW HERE
+		if(stream_resolve_include_path($cacheEntry->cachePath) === true && is_writable($cacheEntry->cachePath) === false)
+			throw new TemplateEngineException('Cache file is not writable: ' . $cacheEntry->cachePath);
+
+		if(file_put_contents($cacheEntry->cachePath, $compiledTemplateContent) === false)
+			throw new TemplateEngineException('Could not cache template-file: ' . $cacheEntry->cachePath);
+
+		$errorReportingLevel = error_reporting(0);
+		$fileSize = filesize($cacheEntry->templatePath);
+
+		if(($changeTime = filemtime($cacheEntry->templatePath)) === false)
+			$changeTime = filectime($cacheEntry->templatePath);
+
+		error_reporting($errorReportingLevel);
+
+		$cacheEntry->size = $fileSize;
+		$cacheEntry->changeTime = $changeTime;
+
+		$this->cacheChanged = true;
+
+		return $cacheEntry;
 	}
 }
 

@@ -39,12 +39,10 @@ class PrintTag extends TemplateTag implements TagNode, TagInline
 	{
 		$data = $templateEngine->getDataFromSelector($selector);
 		
-		if($data instanceof \DateTime)
-			return $data->format('Y-m-d H:i:s');
-		elseif(is_scalar($data) === false)
-			return print_r($data, true);
+		if(is_array($data) === false && (is_object($data) === false || is_callable(array($data, '__toString')) === true))
+			return $data;
 		
-		return $data;
+		return print_r($data, true);
 	}
 
 	/**

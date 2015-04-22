@@ -6,19 +6,21 @@ namespace timesplinter\tsfw\template;
  * @author Pascal Muenst <dev@timesplinter.ch>
  * @copyright Copyright (c) 2014, TiMESPLiNTER Webdevelopment
  */
-class DirectoryTemplateCache extends TemplateCacheStrategy
+class DirectoryTemplateCache implements TemplateCacheStrategy
 {
 	const CACHE_SUFFIX = '.php';
 
 	protected $baseDir;
 	protected $baseDirLength;
+	protected $cachePath;
+	protected $registry;
 	
 	function __construct($cachePath, $baseDir = DIRECTORY_SEPARATOR)
 	{
-		parent::__construct($cachePath);
-		
+		$this->cachePath = $cachePath;
 		$this->baseDir = $baseDir;
 		$this->baseDirLength = strlen($baseDir);
+		$this->registry = array();
 	}
 	
 	/**
@@ -29,34 +31,28 @@ class DirectoryTemplateCache extends TemplateCacheStrategy
 	 */
 	public function getCachedTplFile($tplFile)
 	{
-		$cacheFileName = $this->getCacheFileName($tplFile);
-		$cacheFilePath = $this->cachePath . $cacheFileName;
+		$cacheFilePath = $this->cachePath . $this->getCacheFileName($tplFile);
 		
 		if(file_exists($cacheFilePath) === false)
 			return null;
 		
-		if(($chan3geTime = filemtime($cacheFilePath)) === false)
-			$changeTime = filectime($cacheFilePath);
-		
-		return $this->createTemplateCacheEntry($cacheFileName, $changeTime, -1);
+		return $this->createTemplateCacheEntry($tplFile, $cacheFilePath);
 	}
 
 	/**
 	 * @param string $tplFile
-	 * @param TemplateCacheEntry|null $currentCacheEntry
 	 * @param string $compiledTemplateContent
 	 *
 	 * @return TemplateCacheEntry Path to the cached template
 	 */
-	public function addCachedTplFile($tplFile, $currentCacheEntry, $compiledTemplateContent)
+	public function addCachedTplFile($tplFile, $compiledTemplateContent)
 	{
-		$cacheFileName = $this->getCacheFileName($tplFile);
-		$cacheFilePath = $this->cachePath . $cacheFileName;
+		$cacheFilePath = $this->cachePath . $this->getCacheFileName($tplFile);
 
 		if(file_exists($cacheFilePath) === true) {
 			file_put_contents($cacheFilePath, $compiledTemplateContent);
 			
-			return $this->createTemplateCacheEntry($cacheFileName, time(), -1);
+			return $this->createTemplateCacheEntry($tplFile, $cacheFilePath);
 		}
 		
 		$fileLocation = pathinfo($cacheFilePath, PATHINFO_DIRNAME);
@@ -66,7 +62,7 @@ class DirectoryTemplateCache extends TemplateCacheStrategy
 
 		file_put_contents($cacheFilePath, $compiledTemplateContent);
 		
-		return $this->createTemplateCacheEntry($cacheFileName, time(), -1);
+		return $this->createTemplateCacheEntry($tplFile, $cacheFilePath);
 	}
 
 	/**
@@ -81,16 +77,51 @@ class DirectoryTemplateCache extends TemplateCacheStrategy
 		return preg_replace('/\.\w+$/', self::CACHE_SUFFIX, substr($tplFile, $offset));
 	}
 	
-	protected function createTemplateCacheEntry($path, $changeTime, $size)
+	protected function createTemplateCacheEntry($tplFile, $cacheFilePath)
 	{
+		if(isset($this->registry[$tplFile]) === true)
+			return $this->registry[$tplFile];
+		
 		$templateCacheEntry = new TemplateCacheEntry();
 
-		$templateCacheEntry->templatePath = $path;
-		$templateCacheEntry->cachePath = $path;
+		if(($changeTime = filemtime($cacheFilePath)) === false)
+			$changeTime = filectime($cacheFilePath);
+		
+		$templateCacheEntry->templatePath = $tplFile;
+		$templateCacheEntry->cachePath = $cacheFilePath;
 		$templateCacheEntry->changeTime = $changeTime;
-		$templateCacheEntry->size = $size;
 
-		return $templateCacheEntry;
+		return ($this->registry[$tplFile] = $templateCacheEntry);
+	}
+
+	/**
+	 * @param TemplateCacheEntry $cacheEntry
+	 * @param string $compiledTemplateContent
+	 *
+	 * @return TemplateCacheEntry
+	 */
+	public function updateCachedTplFile(TemplateCacheEntry $cacheEntry, $compiledTemplateContent)
+	{
+		// We don't need to preserve the cache entry because it's not loaded from a cache index
+		return $this->addCachedTplFile($cacheEntry->templatePath, $compiledTemplateContent);
+	}
+
+	/**
+	 * Returns a cache entry for the given template file if there is a valid one
+	 *
+	 * @param TemplateCacheEntry $cacheEntry Path to the template file that should be checked
+	 *
+	 * @return bool Is file cached or not
+	 */
+	public function isCacheEntryValid(TemplateCacheEntry $cacheEntry)
+	{
+		if(($changeTime = @filemtime($cacheEntry->templatePath)) === false)
+			$changeTime = @filectime($cacheEntry->templatePath);
+
+		if($cacheEntry->changeTime < $changeTime)
+			return false;
+
+		return true;
 	}
 }
 

@@ -14,16 +14,11 @@ abstract class AbstractTemplateTest extends \PHPUnit_Framework_TestCase
 {
 	/** @var TemplateEngine */
 	protected $tplEngine;
-	protected $testInputFile;
 	
 	protected function setUp()
 	{
 		/** @var TemplateCacheStrategy $cacheStrategyMock */
-		$this->tplEngine = new TemplateEngine(
-			new NullTemplateCache(), 'tst'
-		);
-
-		$this->testInputFile = tempnam(sys_get_temp_dir(), 'tpltest');
+		$this->tplEngine = new TemplateEngine('tst');
 	}
 }
 

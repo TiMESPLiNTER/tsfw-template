@@ -23,14 +23,15 @@ class TemplateEngineTest extends AbstractTemplateTest
 	{
 		
 		
-		$this->assertStringEqualsFile($this->basePath . 'templates/plain.html', $this->tplEngine->getResultAsHtml($this->basePath . 'templates/plain.html'));
+		$this->assertStringEqualsFile($this->basePath . 'templates/plain.html', $this->tplEngine->renderFromFile($this->basePath . 'templates/plain.html'));
 	}
 	
 	public function testParseCustomTagTemplate()
 	{
-		$this->assertStringEqualsFile($this->basePath . 'templates-result/custom-tags.html', $this->tplEngine->getResultAsHtml($this->basePath . 'templates/custom-tags.html', array(
+		$this->assertStringEqualsFile($this->basePath . 'templates-result/custom-tags.html', $this->tplEngine->renderFromFile($this->basePath . 'templates/custom-tags.html', array(
 			'title' => 'Foo',
-			'content' => 'Bar baz'
+			'content' => 'Bar baz',
+			'link' => 'http://example.com'
 		)));
 	}
 }

@@ -43,7 +43,7 @@ class TemplateEngine
 	 * 
 	 * @return TemplateEngine A template engine instance to render files
 	 */
-	public function __construct(TemplateCacheStrategy $tplCacheInterface, $tplNsPrefix, array $customTags = array())
+	public function __construct($tplNsPrefix, TemplateCacheStrategy $tplCacheInterface = null, array $customTags = array())
 	{
 		$this->templateCacheInterface = $tplCacheInterface;
 		$this->tplNsPrefix = $tplNsPrefix;
@@ -134,19 +134,12 @@ class TemplateEngine
 			// Initiate Tag-Class and call replace()-Method
 			$tagInstance = new $tagClassName;
 
-			if($tagInstance instanceof TemplateTag === false) {
-				$this->templateCacheInterface->setSaveOnDestruct(false);
+			if($tagInstance instanceof TemplateTag === false)
 				throw new TemplateEngineException('The class "' . $tagClassName . '" does not implement the abstract class "TemplateTag" and is so recognized as an illegal class for a custom tag."');
-			}
 			
 			/** @var TagNode $tagInstance */
 			
-			try {
-				$tagInstance->replaceNode($this, $node);
-			} catch(TemplateEngineException $e) {
-				$this->templateCacheInterface->setSaveOnDestruct(false);
-				throw $e;
-			}
+			$tagInstance->replaceNode($this, $node);
 
 			$this->lastTplTag = $tagInstance;
 		}
@@ -179,10 +172,8 @@ class TemplateEngine
 
 			$tagInstance = new $tagClassName;
 
-			if($tagInstance instanceof TemplateTag === false) {
-				$this->templateCacheInterface->setSaveOnDestruct(false);
+			if($tagInstance instanceof TemplateTag === false)
 				throw new TemplateEngineException('The class "' . $tagClassName . '" does not implement the abstract class "TemplateTag" and is so not recognized as an illegal class for a custom tag."');
-			}
 
 			if($tagInstance instanceof TagInline === false)
 				throw new TemplateEngineException('CustomTag "' . $tagClassName . '" is not allowed to use inline.');
@@ -200,55 +191,11 @@ class TemplateEngine
 					$params[$parsedParams[$p][1]] = $parsedParams[$p][2];
 			}
 
-			try {
-				$repl = $tagInstance->replaceInline($this, $params);
-				$value = str_replace($inlineTags[$j][0], $repl, $value);
-			} catch(TemplateEngineException $e) {
-				$this->templateCacheInterface->setSaveOnDestruct(false);
-				throw $e;
-			}
+			$repl = $tagInstance->replaceInline($this, $params);
+			$value = str_replace($inlineTags[$j][0], $repl, $value);
 		}
 
 		return $value;
-	}
-
-	/**
-	 * Parses the template and caches it
-	 *
-	 * @param string $tplFile The path to the template file to parse
-	 * @param TemplateCacheEntry|null $currentCacheEntry
-	 *
-	 * @return TemplateCacheEntry The corresponding template cache entry
-	 * @throws TemplateEngineException
-	 */
-	protected function cache($tplFile, $currentCacheEntry)
-	{
-		$this->templateCacheInterface->setSaveOnDestruct(false);
-		
-		return $this->templateCacheInterface->addCachedTplFile(
-			$tplFile, 
-			$currentCacheEntry, 
-			$this->parseFile($tplFile)
-		);
-	}
-
-	/**
-	 * Returns a cache entry for the given template file if there is a valid one
-	 *
-	 * @param string $tplPath
-	 * @param TemplateCacheEntry $tplCacheEntry Path to the template file that should be checked
-	 *
-	 * @return bool Is file cached or not
-	 */
-	protected function isCacheEntryValid($tplPath, TemplateCacheEntry $tplCacheEntry)
-	{
-		if(($changeTime = @filemtime($tplPath)) === false)
-			$changeTime = @filectime($tplPath);
-		
-		if(($tplCacheEntry->size >= 0 && $tplCacheEntry->size !== @filesize($tplPath)) || $tplCacheEntry->changeTime < $changeTime)
-			return false;
-
-		return true;
 	}
 
 	/**
@@ -260,63 +207,69 @@ class TemplateEngine
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function getResultAsHtml($tplFile, $tplVars = array())
+	public function renderFromFile($tplFile, $tplVars = array())
 	{
-		if(stream_resolve_include_path($tplFile) === false)
+		if(($tplFilePath = stream_resolve_include_path($tplFile)) === false)
 			throw new TemplateEngineException('Could not find template file: ' . $tplFile);
+
+		$this->currentTemplateFile = $tplFilePath;
+		$this->dataPool = new \ArrayObject($tplVars);
+
+		if($this->templateCacheInterface === null)
+			return $this->render($this->compile(file_get_contents($tplFile)), $tplVars);
+
+		ob_start();
 		
-		try {
-			$this->currentTemplateFile = $tplFile;
-			$this->dataPool = new \ArrayObject($tplVars);
+		$templateCacheEntry = $this->templateCacheInterface->getCachedTplFile($tplFilePath);
 
-			$templateCacheEntry = $this->templateCacheInterface->getCachedTplFile($tplFile);
-			
-			if($templateCacheEntry === null || $this->isCacheEntryValid($tplFile, $templateCacheEntry) === false) {
-				$templateCacheEntry = $this->cache($tplFile, $templateCacheEntry);
-			}
-			
-			$tplFileToRequire = $this->templateCacheInterface->getCachePath() . $templateCacheEntry->path;
-			
-			ob_start();
-			
-			require $tplFileToRequire;
-
-			return ob_get_clean();
-		} catch(\Exception $e) {
-			// Throw away the whole template code till now
-			ob_clean();
-
-			// Throw the exception again
-			throw $e;
+		if($templateCacheEntry === null) {
+			$templateCacheEntry = $this->templateCacheInterface->addCachedTplFile(
+				$tplFilePath,
+				$this->compile(file_get_contents($tplFile))
+			);
+		} elseif($this->templateCacheInterface->isCacheEntryValid($templateCacheEntry) === false) {
+			$this->templateCacheInterface->updateCachedTplFile(
+				$templateCacheEntry,
+				$this->compile(file_get_contents($tplFile))
+			);
 		}
+		
+		require $templateCacheEntry->cachePath;
+
+		return ob_get_clean();
 	}
 
 	/**
-	 * This method parses the given template file
-	 * 
-	 * @param string $tplFile
+	 * @param string $content The compiled template
+	 * @param array $tplVars The data for this template
 	 *
 	 * @return string
-	 * @throws TemplateEngineException
 	 */
-	protected function parseFile($tplFile)
+	public function render($content, $tplVars = array())
 	{
-		$cacheFileName = null;
-		
-		if(stream_resolve_include_path($tplFile) === false)
-			throw new TemplateEngineException('Template file \'' . $tplFile . '\' does not exists');
-		
-		// Render tpl
-		return $this->parse(file_get_contents($tplFile));
+		$this->currentTemplateFile = null;
+		$this->dataPool = new \ArrayObject($tplVars);
+
+		ob_start();
+
+		eval('?>' . $this->compile($content));
+
+		return ob_get_clean();
 	}
 	
-	protected function parse($content)
+	public function getResultAsHtml($tplFile, $tplVars = array())
+	{
+		return $this->renderFromFile($tplFile, $tplVars);
+	}
+	
+	public function compile($content)
 	{
 		$this->htmlDoc = new HtmlDoc($content, $this->tplNsPrefix);
 
 		foreach($this->customTags as $customTag) {
-			if(in_array(TagNode::class, class_implements($customTag)) === false || $customTag::isSelfClosing() === false)
+			if(in_array(TagNode::class, class_implements($customTag)) === false || $customTag::isSelfClosing() === false) {
 				continue;
+			}
 
 			/** @var TagNode $customTag */
 			$this->htmlDoc->addSelfClosingTag($this->tplNsPrefix . ':' . $customTag::getName());

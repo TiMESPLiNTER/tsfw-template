@@ -2,10 +2,11 @@
 <html>
 <head>
 	<meta charset="UTF-8">
-	<title><tst:text value="title" /></title>
+	<title><tst:print var="title" /></title>
 </head>
 <body>
-	<h1><tst:text value="title" /></h1>
-	<p><tst:text value="content" /></p>
+	<h1><tst:print var="title" /></h1>
+	<p><tst:print var="content" /></p>
+	<p><a href="{tst:print var='link'}">Visit link</a></p>
 </body>
 </html>

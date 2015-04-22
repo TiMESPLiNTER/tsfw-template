@@ -48,7 +48,7 @@ class LoadSubTplTag extends TemplateTag implements TagNode
 		array_pop($tplPath);
 		$tplPathStr = implode(DIRECTORY_SEPARATOR, $tplPath) . DIRECTORY_SEPARATOR;
 
-		echo $tplEngine->getResultAsHtml($tplPathStr . $file, (array)$tplEngine->getAllData());
+		echo $tplEngine->renderFromFile($tplPathStr . $file, (array)$tplEngine->getAllData());
 	}
 
 	/**

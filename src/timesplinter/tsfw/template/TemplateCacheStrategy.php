@@ -6,50 +6,39 @@ namespace timesplinter\tsfw\template;
  * @author Pascal Muenst <dev@timesplinter.ch>
  * @copyright Copyright (c) 2012, TiMESPLiNTER Webdevelopment
  */
-abstract class TemplateCacheStrategy 
+interface TemplateCacheStrategy 
 {
-	protected $saveOnDestruct;
-	protected $cachePath;
-
-	public function __construct($cachePath)
-	{
-		if(file_exists($cachePath) === false)
-			mkdir($cachePath, 0777, true);
-
-		$this->cachePath = $cachePath;
-		
-		$this->saveOnDestruct = true;
-	}
-	
 	/**
 	 * 
 	 * @param string $tplFile
 	 * @return TemplateCacheEntry|null
 	 */
-	public abstract function getCachedTplFile($tplFile);
+	public function getCachedTplFile($tplFile);
 
 	/**
 	 * @param string $tplFile
-	 * @param TemplateCacheEntry|null $currentCacheEntry
 	 * @param string $compiledTemplateContent
 	 *
 	 * @return TemplateCacheEntry Path to the cached template
 	 */
-	public abstract function addCachedTplFile($tplFile, $currentCacheEntry, $compiledTemplateContent);
-
-	public function getCachePath()
-	{
-		return $this->cachePath;
-	}
+	public function addCachedTplFile($tplFile, $compiledTemplateContent);
 
 	/**
+	 * @param TemplateCacheEntry $cacheEntry
+	 * @param string $compiledTemplateContent
 	 *
-	 * @param boolean $saveOnDestruct
+	 * @return TemplateCacheEntry
 	 */
-	public function setSaveOnDestruct($saveOnDestruct)
-	{
-		$this->saveOnDestruct = $saveOnDestruct;
-	}
+	public function updateCachedTplFile(TemplateCacheEntry $cacheEntry, $compiledTemplateContent);
+
+	/**
+	 * Returns a cache entry for the given template file if there is a valid one
+	 *
+	 * @param TemplateCacheEntry $cacheEntry Path to the template file that should be checked
+	 *
+	 * @return bool Is file cached or not
+	 */
+	public function isCacheEntryValid(TemplateCacheEntry $cacheEntry);
 }
 
 /* EOF */

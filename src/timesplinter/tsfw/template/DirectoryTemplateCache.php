@@ -35,7 +35,7 @@ class DirectoryTemplateCache extends TemplateCacheStrategy
 		if(file_exists($cacheFilePath) === false)
 			return null;
 		
-		if(($changeTime = filemtime($cacheFilePath)) === false)
+		if(($chan3geTime = filemtime($cacheFilePath)) === false)
 			$changeTime = filectime($cacheFilePath);
 		
 		return $this->createTemplateCacheEntry($cacheFileName, $changeTime, -1);

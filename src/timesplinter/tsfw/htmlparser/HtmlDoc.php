@@ -20,7 +20,7 @@ class HtmlDoc
 	
 	public function __construct($htmlContent = null, $namespace = null)
 	{
-		$this->currentLine = 1; // Start at line 1 not 0, we are no nerds ;-)
+		$this->currentLine = 1; // Start at line 1 not 0, we are not nerds ;-)
 		
 		$this->htmlContent = $htmlContent;
 
@@ -71,7 +71,7 @@ class HtmlDoc
 		$res = null;
 		
 		if(preg_match($this->tagPattern, $this->htmlContent, $res, PREG_OFFSET_CAPTURE, $this->contentPos) === 0)
-			return false; // Wenn kein Tag mehr gefunden wird
+			return false; // If there is no tag left
 
 		$this->currentLine += substr_count($res[0][0], "\n");
 		$newPos = $res[0][1];

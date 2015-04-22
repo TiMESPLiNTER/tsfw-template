@@ -11,13 +11,24 @@ class NullTemplateCache extends TemplateCacheStrategy
 
 	protected $nullCacheFile;
 	protected $nullCacheEntry;
-	
-	public function __construct()
+
+	/**
+	 * @param string|null $tmpDir The temp directory where the compiled files should be written to
+	 *
+	 * @throws TemplateEngineException If the temp directory is not writable
+	 */
+	public function __construct($tmpDir = null)
 	{
-		$this->nullCacheFile = tempnam(sys_get_temp_dir(), 'tpl');
+		if($tmpDir === null)
+			$tmpDir = sys_get_temp_dir();
+		
+		if(is_writable($tmpDir) === false)
+			throw new TemplateEngineException('The temp directory ' . $tmpDir . ' is not writable');
+		
+		$this->nullCacheFile = tempnam($tmpDir, 'tpl');
 		
 		$this->nullCacheEntry = new TemplateCacheEntry();
-		$this->nullCacheEntry->path = $this->nullCacheFile;
+		$this->nullCacheEntry->cachePath = $this->nullCacheFile;
 		$this->nullCacheEntry->size = -1;
 		$this->nullCacheEntry->changeTime = PHP_INT_MAX;
 	}

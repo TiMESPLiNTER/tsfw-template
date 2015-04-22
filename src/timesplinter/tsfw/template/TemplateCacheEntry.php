@@ -8,7 +8,8 @@ namespace timesplinter\tsfw\template;
  */
 class TemplateCacheEntry
 {
-	public $path;
+	public $templatePath;
+	public $cachePath;
 	public $changeTime;
 	public $size;
 }

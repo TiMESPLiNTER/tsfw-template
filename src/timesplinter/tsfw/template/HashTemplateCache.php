@@ -13,7 +13,6 @@ class HashTemplateCache extends TemplateCacheStrategy
 	private $filePath;
 	private $registry;
 	private $cacheChanged;
-    private $logger;
 
 	public function __construct($cachePath, $filePath)
 	{
@@ -44,7 +43,7 @@ class HashTemplateCache extends TemplateCacheStrategy
 			$tplCacheEntry = new TemplateCacheEntry();
 			
 			$tplCacheEntry->changeTime = $entry->changeTime;
-			$tplCacheEntry->path = $entry->path;
+			$tplCacheEntry->templatePath = $entry->path;
 			$tplCacheEntry->size = $entry->size;
 			
 			$entries[$key] = $tplCacheEntry;
@@ -64,7 +63,7 @@ class HashTemplateCache extends TemplateCacheStrategy
 		$fp = file_put_contents($cacheFilePath, json_encode($this->registry));
 
 		if($fp === false) {
-			$this->logger->error('Could not write template cache-file: ' . $cacheFilePath);
+			throw new TemplateEngineException('Could not write template cache-file: ' . $cacheFilePath);
 		}
 	}
 

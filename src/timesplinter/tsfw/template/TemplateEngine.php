@@ -256,7 +256,16 @@ class TemplateEngine
 
 		return ob_get_clean();
 	}
-	
+
+	/**
+	 * @deprecated Use renderFromFile instead
+	 * 
+	 * @param string $tplFile
+	 * @param array $tplVars
+	 *
+	 * @return string
+	 * @throws TemplateEngineException
+	 */
 	public function getResultAsHtml($tplFile, $tplVars = array())
 	{
 		return $this->renderFromFile($tplFile, $tplVars);

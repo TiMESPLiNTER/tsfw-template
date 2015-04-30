@@ -2,9 +2,8 @@
 
 namespace timesplinter\tsfw\template\test;
 
-use timesplinter\tsfw\template\NullTemplateCache;
-use timesplinter\tsfw\template\TemplateCacheStrategy;
-use timesplinter\tsfw\template\TemplateEngine;
+use timesplinter\tsfw\template\common\TemplateCacheStrategy;
+use timesplinter\tsfw\template\common\TemplateEngine;
 
 /**
  * @author Pascal Muenst <dev@timesplinter.ch>
@@ -18,7 +17,7 @@ abstract class AbstractTemplateTest extends \PHPUnit_Framework_TestCase
 	protected function setUp()
 	{
 		/** @var TemplateCacheStrategy $cacheStrategyMock */
-		$this->tplEngine = new TemplateEngine('tst');
+		$this->tplEngine = new TemplateEngine();
 	}
 }
 

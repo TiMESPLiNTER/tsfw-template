@@ -27,15 +27,14 @@ class HtmlDoc
 		$this->nodeTree = new DocumentNode($this);
 		$this->pendingNode = $this->nodeTree;
 
-		$this->selfClosingTags = array('br', 'hr', 'img', 'input', 'link', 'meta');
+		$this->selfClosingTags = array(
+			'area', 'base', 'basefont', 'br', 'col', 'command', 'embed', 'frame', 'hr', 'img', 'input', 'ins', 'keygen',
+			'link', 'meta', 'param', 'source', 'track', 'wbr' 
+		);
 
 		$this->namespace = $namespace;
 
-		if($namespace !== null) {
-			$this->tagPattern = '/(?:<!--.+?-->|<!\[CDATA\[.+?\]\]>|<(\/)?(' . $this->namespace . '\:\w+?)((?:\s+[^=]+="[^"]*")*?)?(\s*\/)?\s*>)/ims';
-		} else {
-			$this->tagPattern = '/(?:<!--.+?-->|<!\[CDATA\[.+?\]\]>|<(\/)?(\w+?)((?:\s+[^=]+="[^"]*")*?)?(\s*\/)?\s*>)/ims';
-		}
+		$this->tagPattern = '/(?:<!--.+?-->|<!\[CDATA\[.+?\]\]>|<(\/)?([^\s]+?)((?:\s+[^=]+="[^"]*")*?)?(\s*\/)?\s*>)/ims';
 	}
 
 	/**

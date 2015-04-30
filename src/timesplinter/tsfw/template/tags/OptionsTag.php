@@ -1,12 +1,12 @@
 <?php
 
-namespace timesplinter\tsfw\customtags;
+namespace timesplinter\tsfw\template\tags;
 
 use timesplinter\tsfw\htmlparser\ElementNode;
 use timesplinter\tsfw\htmlparser\TextNode;
-use timesplinter\tsfw\template\TagNode;
-use timesplinter\tsfw\template\TemplateEngine;
-use timesplinter\tsfw\template\TemplateTag;
+use timesplinter\tsfw\template\common\TagNode;
+use timesplinter\tsfw\template\common\TemplateEngine;
+use timesplinter\tsfw\template\common\TemplateTag;
 
 /**
  * @author Pascal Muenst <entwicklung@metanet.ch>

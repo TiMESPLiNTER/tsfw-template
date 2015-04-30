@@ -1,12 +1,13 @@
 <?php
 
-namespace timesplinter\tsfw\template;
+namespace timesplinter\tsfw\template\common;
 
 use timesplinter\tsfw\common\StringUtils;
 use timesplinter\tsfw\htmlparser\CDataSectionNode;
 use timesplinter\tsfw\htmlparser\ElementNode;
 use timesplinter\tsfw\htmlparser\HtmlDoc;
 use timesplinter\tsfw\htmlparser\TextNode;
+use timesplinter\tsfw\template\tags\BasicTagCollection;
 
 /**
  * TemplateEngine
@@ -18,10 +19,9 @@ class TemplateEngine
 {
 	/** @var HtmlDoc */
 	protected $htmlDoc;
-	protected $tplNsPrefix;
 	protected $dataPool;
 	protected $dataTable;
-	protected $customTags;
+	protected $tags = array();
 
 	protected $cached;
 
@@ -38,41 +38,24 @@ class TemplateEngine
 	/**
 	 * 
 	 * @param TemplateCacheStrategy $tplCacheInterface The template cache object
-	 * @param string $tplNsPrefix The prefix for custom tags in the template file
-	 * @param array $customTags Additional custom tags to be loaded
 	 * 
 	 * @return TemplateEngine A template engine instance to render files
 	 */
-	public function __construct($tplNsPrefix, TemplateCacheStrategy $tplCacheInterface = null, array $customTags = array())
+	public function __construct(TemplateCacheStrategy $tplCacheInterface = null)
 	{
 		$this->templateCacheInterface = $tplCacheInterface;
-		$this->tplNsPrefix = $tplNsPrefix;
-		$this->customTags = self::getDefaultCustomTags() + $customTags;
-
+		
+		$this->registerTagCollection(new BasicTagCollection());
+		
 		$this->dataPool = new \ArrayObject();
 		$this->dataTable = array();
 
 		$this->getterMethodPrefixes = array('get', 'is', 'has');
 	}
 
-	protected static function getDefaultCustomTags()
+	protected function registerTagCollection(TagCollection $tagCollection)
 	{
-		return array(
-			'text' => 'timesplinter\tsfw\customtags\TextTag',
-			'print' => 'timesplinter\tsfw\customtags\PrintTag',
-			'checkboxOptions' => 'timesplinter\tsfw\customtags\CheckboxOptionsTag',
-			'checkbox' => 'timesplinter\tsfw\customtags\CheckboxTag',
-			'date' => 'timesplinter\tsfw\customtags\DateTag',
-			'else' => 'timesplinter\tsfw\customtags\ElseTag',
-			'for' => 'timesplinter\tsfw\customtags\ForTag',
-			'if' => 'timesplinter\tsfw\customtags\IfTag',
-			'elseif' => 'timesplinter\tsfw\customtags\ElseifTag',
-			'loadSubTpl' => 'timesplinter\tsfw\customtags\LoadSubTplTag',
-			'options' => 'timesplinter\tsfw\customtags\OptionsTag',
-			'option' => 'timesplinter\tsfw\customtags\OptionTag',
-			'radioOptions' => 'timesplinter\tsfw\customtags\RadioOptionsTag',
-			'radio' => 'timesplinter\tsfw\customtags\RadioTag'
-		);
+		$this->tags[$tagCollection->getPrefix()] = $tagCollection->getAvailableTags();
 	}
 
 	protected function load()
@@ -113,20 +96,26 @@ class TemplateEngine
 			} else {
 				if($node instanceof TextNode || /*$node instanceof CommentNode ||*/ $node instanceof CDataSectionNode)
 					$node->content = $this->replaceInlineTag($node->content);
-				
 				continue;
 			}
 			
 			if(count($node->childNodes) > 0)
 				$this->interpolate($node->childNodes);
 
-			if($node->namespace !== $this->tplNsPrefix)
+			if(count(($customTagParts = explode('.', $node->tagName))) !== 2)
+				continue;
+			
+			list($tagBundle, $tagName) = $customTagParts;
+			
+			//var_dump($tagBundle, $tagName);
+			
+			if(isset($this->tags[$tagBundle]) === false)
 				continue;
 
-			if(isset($this->customTags[$node->tagName]) === false)
+			if(isset($this->tags[$tagBundle][$tagName]) === false)
 				throw new TemplateEngineException('The custom tag "' . $node->tagName . '" is not registered in this template engine instance');
 
-			$tagClassName = $this->customTags[$node->tagName];
+			$tagClassName = $this->tags[$tagBundle][$tagName];
 
 			if(class_exists($tagClassName) === false)
 				throw new TemplateEngineException('The Tag "' . $tagClassName . '" does not exist');
@@ -157,18 +146,19 @@ class TemplateEngine
 	{
 		$inlineTags = null;
 		
-		preg_match_all('@\{' . $this->tplNsPrefix . ':(.+?)(?:\\s+(\\w+=\'.+?\'))?\\s*\}@', $value, $inlineTags, PREG_SET_ORDER);
+		preg_match_all('@\{(\w+).(.+?)(?:\\s+(\\w+=\'.+?\'))?\\s*\}@', $value, $inlineTags, PREG_SET_ORDER);
 		
 		if(count($inlineTags) <= 0)
 			return $value;
 
 		for($j = 0; $j < count($inlineTags); $j++) {
-			$tagName = $inlineTags[$j][1];
+			$tagCollection = $inlineTags[$j][1];
+			$tagName = $inlineTags[$j][2];
 
-			if(isset($this->customTags[$tagName]) === false)
+			if(isset($this->tags[$tagCollection][$tagName]) === false)
 				throw new TemplateEngineException('The custom tag "' . $tagName . '" is not registered in this template engine instance');
 
-			$tagClassName = $this->customTags[$tagName];
+			$tagClassName = $this->tags[$tagCollection][$tagName];
 
 			$tagInstance = new $tagClassName;
 
@@ -183,16 +173,16 @@ class TemplateEngine
 			// Params
 			$params = $parsedParams = array();
 
-			if(array_key_exists(2, $inlineTags[$j])) {
-				preg_match_all('@(?:(\\w+)=\'(.+?)\')@', $inlineTags[$j][2], $parsedParams, PREG_SET_ORDER);
+			if(array_key_exists(3, $inlineTags[$j])) {
+				preg_match_all('@(?:(\\w+)=\'(.+?)\')@', $inlineTags[$j][3], $parsedParams, PREG_SET_ORDER);
 
 				$countParams = count($parsedParams);
 				for($p = 0; $p < $countParams; $p++)
 					$params[$parsedParams[$p][1]] = $parsedParams[$p][2];
 			}
 
-			$repl = $tagInstance->replaceInline($this, $params);
-			$value = str_replace($inlineTags[$j][0], $repl, $value);
+			$replacement = $tagInstance->replaceInline($this, $params);
+			$value = str_replace($inlineTags[$j][0], $replacement, $value);
 		}
 
 		return $value;
@@ -273,15 +263,14 @@ class TemplateEngine
 	
 	public function compile($content)
 	{
-		$this->htmlDoc = new HtmlDoc($content, $this->tplNsPrefix);
+		$this->htmlDoc = new HtmlDoc($content);
 
-		foreach($this->customTags as $customTag) {
-			if(in_array(TagNode::class, class_implements($customTag)) === false || $customTag::isSelfClosing() === false) {
-				continue;
+		foreach($this->tags as $collection => $tags) {
+			foreach($tags as $customTag) {
+
+				/** @var TagNode $customTag */
+				$this->htmlDoc->addSelfClosingTag($collection . '.' . $customTag::getName());
 			}
-
-			/** @var TagNode $customTag */
-			$this->htmlDoc->addSelfClosingTag($this->tplNsPrefix . ':' . $customTag::getName());
 		}
 
 		$this->load();
@@ -422,18 +411,7 @@ class TemplateEngine
 
 		return true;
 	}
-
-	/**
-	 * Register a new tag for the this TemplateEngine instance
-	 *
-	 * @param string $tagName The name of the tag
-	 * @param string $tagClass The class name of the tag
-	 */
-	public function registerTag($tagName, $tagClass)
-	{
-		$this->customTags[$tagName] = $tagClass;
-	}
-
+	
 	/**
 	 * @param string $selectorStr
 	 * @param bool $returnNull

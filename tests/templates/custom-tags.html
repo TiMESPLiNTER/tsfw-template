@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:tst="http://www.google.com">
 <head>
 	<meta charset="UTF-8">
 	<title><tst:print var="title" /></title>
@@ -7,6 +7,6 @@
 <body>
 	<h1><tst:print var="title" /></h1>
 	<p><tst:print var="content" /></p>
-	<p><a href="{tst:print var='link'}">Visit link</a></p>
+	<p><a href="{tst.print var='link'}">Visit link</a></p>
 </body>
 </html>

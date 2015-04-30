@@ -1,17 +1,18 @@
 <?php
 
-namespace timesplinter\tsfw\customtags;
+namespace timesplinter\tsfw\template\tags;
 
 use timesplinter\tsfw\htmlparser\ElementNode;
-use timesplinter\tsfw\template\TagNode;
-use timesplinter\tsfw\template\TemplateEngine;
-use timesplinter\tsfw\template\TemplateTag;
+use timesplinter\tsfw\htmlparser\TextNode;
+use timesplinter\tsfw\template\common\TagNode;
+use timesplinter\tsfw\template\common\TemplateEngine;
+use timesplinter\tsfw\template\common\TemplateTag;
 
 /**
- * @author Pascal Münst
- * @copyright Copyright (c) 2012, Pascal Münst
+ * @author Pascal Muenst <dev@timesplinter.ch>
+ * @copyright Copyright (c) 2012, TiMESPLiNTER Webdevelopment
  */
-class CheckboxOptionsTag extends TemplateTag implements TagNode
+class RadioOptionsTag extends TemplateTag implements TagNode
 {
 	public function replaceNode(TemplateEngine $tplEngine, ElementNode $node)
 	{
@@ -20,11 +21,11 @@ class CheckboxOptionsTag extends TemplateTag implements TagNode
 
 		$compareArr = $tplEngine->getSelectorAsPHPStr($node->getAttribute('checked')->value);
 		$dataKey = $node->getAttribute('options')->value;
-		$fldName = $node->getAttribute('name')->value . '[]';
+		$fldName = $node->getAttribute('name')->value;
 
 		$textContent = '<?php echo "<ul>";  foreach($this->getDataFromSelector(\'' . $dataKey . '\') as $key => $val) {
 			$checked = in_array($key, ((array)' . $compareArr . '))?\' checked\':null;
-			echo \'<li><label><input type="checkbox" value="\'.$key.\'" name="' . $fldName . '"\'.$checked.\'> \'.$val.\'</label></li>\' . "\n";
+			echo \'<li><label><input type="radio" value="\'.$key.\'" name="' . $fldName . '"\'.$checked.\'> \'.$val.\'</label></li>\' . "\n";
 		} echo "</ul>"; ?>';
 
 		$newNode = new TextNode($tplEngine->getDomReader());
@@ -39,7 +40,7 @@ class CheckboxOptionsTag extends TemplateTag implements TagNode
 	 */
 	public static function getName()
 	{
-		return 'checkboxOptions';
+		return 'radioOptions';
 	}
 
 	/**

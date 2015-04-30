@@ -1,6 +1,6 @@
 <?php
 
-namespace timesplinter\tsfw\template;
+namespace timesplinter\tsfw\template\common;
 
 /**
  * TemplateEngineException

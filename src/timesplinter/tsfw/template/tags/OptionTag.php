@@ -1,33 +1,35 @@
 <?php
 
-namespace timesplinter\tsfw\customtags;
+namespace timesplinter\tsfw\template\tags;
 
 use timesplinter\tsfw\htmlparser\ElementNode;
 use timesplinter\tsfw\htmlparser\HtmlAttribute;
-use timesplinter\tsfw\template\TagNode;
-use timesplinter\tsfw\template\TemplateEngine;
-use timesplinter\tsfw\template\TemplateTag;
+use timesplinter\tsfw\template\common\TagNode;
+use timesplinter\tsfw\template\common\TemplateEngine;
+use timesplinter\tsfw\template\common\TemplateTag;
 
 /**
  * @author Pascal Münst <dev@timesplinter.ch>
  * @copyright (c) 2012, TiMESPLiNTER Webdevelopment
  */
-class RadioTag extends TemplateTag implements TagNode
+class OptionTag extends TemplateTag implements TagNode
 {
 	public function replaceNode(TemplateEngine $tplEngine, ElementNode $node)
 	{
 		// DATA
 		$sels = $node->getAttribute('selection')->value;
-		$selsStr = '$this->getDataFromSelector(\'' . $sels . '\')';
-		$value = $node->getAttribute('value')->value;
+		$valueAttr = $node->getAttribute('value')->value;
+		$value = is_numeric($valueAttr)?$valueAttr:"'" . $valueAttr . "'";
+		$type = $node->getAttribute('type')->value;
 		$node->removeAttribute('selection');
 		
 		$node->namespace = null;
 		$node->tagName = 'input';
+		
 		if($sels !== null)
-			$node->tagExtension = " <?php echo ((is_array({$selsStr}) && in_array({$value}, {$selsStr})) || ({$selsStr} == '{$value}'))?' checked':null; ?>";
-
-		$node->addAttribute(new HtmlAttribute('type', 'radio'));
+			$node->tagExtension = " <?php echo in_array({$value}, \$this->getData('{$sels}'))?' checked=\"checked\"':null; ?>";
+		
+		$node->addAttribute(new HtmlAttribute('type', $type));
 	}
 
 	/**
@@ -35,7 +37,7 @@ class RadioTag extends TemplateTag implements TagNode
 	 */
 	public static function getName()
 	{
-		return 'radio';
+		return 'option';
 	}
 
 	/**
